@@ -43,6 +43,12 @@
             position: relative;
             border: 8px solid #1a1a1a; /* Viền đen điện thoại */
         }
+        .js-enabled .mobile-frame {
+            display: none;
+        }
+        .js-enabled .mobile-frame.is-active {
+            display: block;
+        }
 
         /* =========================================
            INTERFACE 1: SPLASH SCREEN STYLES
@@ -81,14 +87,31 @@
         .c2 { width: 20px; height: 20px; background: rgba(255,255,255,0.3); bottom: 150px; left: 80px; border: none;}
         .c3 { width: 10px; height: 10px; background: rgba(255,255,255,0.3); bottom: 180px; left: 60px; border: none;}
         
-        /* Center Content Wrapper */
-        .screen-01__content {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+         /* Center Content Wrapper */
+         .screen-01__content {
+             position: relative;
+             z-index: 2;
+             display: flex;
+             flex-direction: column;
+             align-items: center;
+         }
+         .screen-01__start-btn {
+             margin-top: 40px;
+             padding: 12px 36px;
+             border-radius: 30px;
+             border: none;
+             background: #ffffff;
+             color: #0065FF;
+             font-size: 16px;
+             font-weight: 800;
+             cursor: pointer;
+             box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+             transition: transform 0.2s ease, box-shadow 0.2s ease;
+         }
+         .screen-01__start-btn:active {
+             transform: translateY(2px);
+             box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+         }
 
         /* Icon Tablet vẽ bằng CSS */
         .screen-01__icon {
@@ -544,24 +567,27 @@
         }
 
         /* Nút Đăng nhập chính (Full width) */
-        .btn-primary-large {
-            width: 100%;
-            background-color: #0065FF;
-            color: white;
-            border: none;
-            height: 60px;
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 5px 8px 5px 25px; /* Padding để căn chỉnh nội dung */
-            font-size: 16px;
-            font-weight: 700;
-            font-family: 'Nunito', sans-serif;
-            box-shadow: 0 10px 20px rgba(0, 101, 255, 0.3);
-            cursor: pointer;
-            margin-bottom: 25px;
-        }
+         .btn-primary-large {
+             width: 100%;
+             background-color: #0065FF;
+             color: white;
+             border: none;
+             height: 60px;
+             border-radius: 30px;
+             display: flex;
+             align-items: center;
+             justify-content: space-between;
+             padding: 5px 8px 5px 25px; /* Padding để căn chỉnh nội dung */
+             font-size: 16px;
+             font-weight: 700;
+             font-family: 'Nunito', sans-serif;
+             box-shadow: 0 10px 20px rgba(0, 101, 255, 0.3);
+             cursor: pointer;
+             margin-bottom: 25px;
+         }
+         .modal-continue-btn {
+             margin-top: 25px;
+         }
 
         /* Footer Link */
         .footer-link-text {
@@ -1836,6 +1862,7 @@
                 <!-- Text -->
                 <h1 class="screen-01__title">Telead</h1>
                 <p class="screen-01__subtitle">HỌC MỌI LÚC</p>
+                <button class="screen-01__start-btn" type="button">Bắt đầu</button>
             </div>
 
         </div>
@@ -2664,6 +2691,12 @@
                     </p>
 
                     <div class="loading-spinner"></div>
+                    <button class="btn-primary-large modal-continue-btn" type="button">
+                        <span>Đi tới trang chủ</span>
+                        <div class="btn-circle-inner">
+                            <i class="arrow-icon-blue"></i>
+                        </div>
+                    </button>
 
                 </div>
             </div>
@@ -2974,6 +3007,12 @@
 
                     <!-- Reuse Spinner -->
                     <div class="loading-spinner"></div>
+                    <button class="btn-primary-large modal-continue-btn" type="button">
+                        <span>Quay lại đăng nhập</span>
+                        <div class="btn-circle-inner">
+                            <i class="arrow-icon-blue"></i>
+                        </div>
+                    </button>
 
                 </div>
             </div>
@@ -3737,5 +3776,141 @@
          INTERFACE 20 END
          ======================================================= -->
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const body = document.body;
+
+            const frames = Array.from(document.querySelectorAll('.mobile-frame'));
+            const screenMap = new Map();
+
+            frames.forEach(frame => {
+                const screenContainer = frame.firstElementChild;
+                if (!screenContainer) {
+                    return;
+                }
+                const screenClass = Array.from(screenContainer.classList).find(cls => /^screen-\d+$/.test(cls));
+                if (!screenClass) {
+                    return;
+                }
+                frame.dataset.screen = screenClass;
+                screenMap.set(screenClass, frame);
+            });
+
+            let currentScreen = null;
+            let currentFrame = null;
+            const historyStack = [];
+
+            const setActive = (screenName, options = {}) => {
+                const nextFrame = screenMap.get(screenName);
+                if (!nextFrame || currentScreen === screenName) {
+                    return;
+                }
+                const remember = options.remember !== false;
+                if (currentScreen && remember) {
+                    historyStack.push(currentScreen);
+                }
+                if (currentFrame) {
+                    currentFrame.classList.remove('is-active');
+                }
+                nextFrame.classList.add('is-active');
+                currentFrame = nextFrame;
+                currentScreen = screenName;
+            };
+
+            const goBack = () => {
+                if (!historyStack.length) {
+                    return;
+                }
+                const previousScreen = historyStack.pop();
+                setActive(previousScreen, { remember: false });
+            };
+
+            const navBindings = [
+                { selector: '.screen-01 .screen-01__start-btn', target: 'screen-02' },
+                { selector: '.screen-02 .btn-next', target: 'screen-03' },
+                { selector: '.screen-02 .btn-skip', target: 'screen-05' },
+                { selector: '.screen-03 .btn-next', target: 'screen-04' },
+                { selector: '.screen-03 .btn-skip', target: 'screen-05' },
+                { selector: '.screen-04 .btn-get-started', target: 'screen-05' },
+                { selector: '.screen-04 .btn-skip', target: 'screen-05' },
+                { selector: '.screen-05 .btn-primary-large', target: 'screen-07' },
+                { selector: '.screen-05 .social-btn', target: 'screen-07' },
+                { selector: '.screen-05 .footer-link-text a', target: 'screen-06' },
+                { selector: '.screen-06 .btn-signup', target: 'screen-08' },
+                { selector: '.screen-06 .footer-center a', target: 'screen-07' },
+                { selector: '.screen-07 .btn-signup', target: 'screen-08' },
+                { selector: '.screen-07 .forgot-pass-link', target: 'screen-12' },
+                { selector: '.screen-07 .footer-center a', target: 'screen-06' },
+                { selector: '.screen-08 .btn-signup', target: 'screen-09' },
+                { selector: '.screen-09 .btn-signup', target: 'screen-10' },
+                { selector: '.screen-10 .btn-primary-half', target: 'screen-11' },
+                { selector: '.screen-10 .btn-secondary', target: 'screen-16' },
+                { selector: '.screen-11 .modal-continue-btn', target: 'screen-16', remember: false },
+                { selector: '.screen-12 .btn-signup', target: 'screen-13' },
+                { selector: '.screen-13 .btn-signup', target: 'screen-14' },
+                { selector: '.screen-14 .btn-signup', target: 'screen-15' },
+                { selector: '.screen-15 .modal-continue-btn', target: 'screen-07', remember: false }
+            ];
+
+            navBindings.forEach(({ selector, target, remember }) => {
+                document.querySelectorAll(selector).forEach(node => {
+                    node.dataset.target = target;
+                    if (remember === false) {
+                        node.dataset.remember = 'false';
+                    }
+                });
+            });
+
+            const homeSecTargets = ['screen-17', 'screen-19', 'screen-20'];
+            document.querySelectorAll('.screen-16 .sec-link').forEach((link, index) => {
+                const target = homeSecTargets[index];
+                if (target) {
+                    link.dataset.target = target;
+                }
+            });
+
+            const navTargets = ['screen-16', 'screen-19', 'screen-18', 'screen-17', 'screen-20'];
+            ['.screen-19', '.screen-20'].forEach(scope => {
+                const items = document.querySelectorAll(`${scope} .nav-item`);
+                items.forEach((item, index) => {
+                    const target = navTargets[index] || navTargets[0];
+                    item.dataset.target = target;
+                    item.dataset.remember = 'false';
+                });
+            });
+
+            document.querySelectorAll('.btn-back').forEach(btn => {
+                btn.dataset.action = 'back';
+            });
+
+            document.body.addEventListener('click', event => {
+                const trigger = event.target.closest('[data-target],[data-action]');
+                if (!trigger) {
+                    return;
+                }
+                event.preventDefault();
+                if (trigger.dataset.action === 'back') {
+                    goBack();
+                    return;
+                }
+                const targetScreen = trigger.dataset.target;
+                if (!targetScreen) {
+                    return;
+                }
+                const remember = trigger.dataset.remember !== 'false';
+                setActive(targetScreen, { remember });
+            });
+
+            const defaultScreen = screenMap.has('screen-01')
+                ? 'screen-01'
+                : (frames[0] ? frames[0].dataset.screen : undefined);
+            if (defaultScreen) {
+                body.classList.add('js-enabled');
+                setActive(defaultScreen, { remember: false });
+            } else {
+                body.classList.remove('js-enabled');
+            }
+        });
+    </script>
 </body>
 </html>
